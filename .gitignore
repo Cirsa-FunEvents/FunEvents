@@ -1,0 +1,30 @@
+# .NET build output
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE settings and local state
+.vs/
+.idea/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# JavaScript frontend build artifacts (for future frontend/web)
+**/node_modules/
+**/dist/
+**/coverage/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,23 @@
+@FunEvents.Api_HostAddress = http://localhost:5053
+@ApiKey = <set-a-local-user-secret>
+@IdempotencyKey = 5bf7893b-aeab-4f32-8b38-89373a4812e1
+
+### Create a reservation
+POST {{FunEvents.Api_HostAddress}}/api/v1/reservations
+X-Api-Key: {{ApiKey}}
+Idempotency-Key: {{IdempotencyKey}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "eventCode": "EVT-001",
+  "sessionCode": "SES-001-A",
+  "userCode": "USR-042",
+  "quantity": 2
+}
+
+### Health check
+GET {{FunEvents.Api_HostAddress}}/health
+Accept: application/json
+
+###
