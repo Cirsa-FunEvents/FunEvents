@@ -8,6 +8,7 @@ using FunEvents.Infrastructure;
 using FunEvents.Infrastructure.Persistence;
 using FunEvents.Migrations.Seeding.Development;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,7 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<FunEventsDbContext>();

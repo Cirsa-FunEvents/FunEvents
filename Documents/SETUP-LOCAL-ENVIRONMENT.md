@@ -69,6 +69,7 @@ The AppHost prints the Aspire Dashboard address and the API endpoint when it sta
 
 - Health check: `/health`
 - OpenAPI document in Development: `/openapi/v1.json`
+- Interactive API reference in Development: `/scalar`
 - Create reservation: `POST /api/v1/reservations`
 - Get reservation: `GET /api/v1/reservations/{reservationCode}`
 - Cancel reservation: `POST /api/v1/reservations/{reservationCode}/cancel`
