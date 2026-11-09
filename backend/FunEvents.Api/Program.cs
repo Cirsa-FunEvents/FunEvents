@@ -9,11 +9,13 @@ using FunEvents.Infrastructure.Persistence;
 using FunEvents.Migrations.Seeding.Development;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using FunEvents.Api.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+    options.AddDocumentTransformer<PartnerApiKeyOpenApiTransformer>());
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.Configure<PartnerApiKeyOptions>(

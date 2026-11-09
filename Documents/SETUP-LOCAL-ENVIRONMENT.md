@@ -74,6 +74,8 @@ The AppHost prints the Aspire Dashboard address and the API endpoint when it sta
 - Get reservation: `GET /api/v1/reservations/{reservationCode}`
 - Cancel reservation: `POST /api/v1/reservations/{reservationCode}/cancel`
 
+In Scalar, use **Authorize** to enter the `X-Api-Key` for the `console` channel. The create-reservation operation documents `Idempotency-Key` as a request header; reuse that key only when retrying the same request.
+
 Stop the AppHost with `Ctrl+C`. To delete the persisted PostgreSQL data, remove the Aspire-created Docker volume from Docker Desktop or with Docker CLI after stopping the AppHost. This permanently deletes local database contents.
 
 ## Run the backend projects individually
@@ -107,12 +109,19 @@ export ConnectionStrings__funevents='Host=localhost;Port=5432;Database=funevents
 dotnet run --project backend/FunEvents.Api/FunEvents.Api.csproj --launch-profile http
 ```
 
-The checked-in `http` launch profile sets `ASPNETCORE_ENVIRONMENT=Development` and listens at `http://localhost:5053`. The API reads the database connection string from Aspire automatically when hosted by AppHost. In Development, API startup applies migrations and idempotently seeds this sample reservation data:
+The checked-in `http` launch profile sets `ASPNETCORE_ENVIRONMENT=Development` and listens at `http://localhost:5053`. The API reads the database connection string from Aspire automatically when hosted by AppHost. In Development, API startup applies migrations and idempotently adds this sample catalog. Re-running the API does not reset inventory already consumed by reservations.
 
-- Event: `EVT-001`
-- Session: `SES-001-A`
-- User: `USR-042`
-- Available quantity: `100`
+| Event | Session | Sales | Initial inventory |
+| --- | --- | --- | ---: |
+| `EVT-001` FunEvents Demo Concert | `SES-001-A` | Open | 100 |
+| `EVT-001` FunEvents Demo Concert | `SES-001-B` | Open | 80 |
+| `EVT-002` The Midnight Players: Live Theatre | `SES-002-A` | Open | 60 |
+| `EVT-002` The Midnight Players: Live Theatre | `SES-002-B` | Closed | 60 |
+| `EVT-003` City Lights Comedy Night | `SES-003-A` | Open | 40 |
+| `EVT-003` City Lights Comedy Night | `SES-003-B` | Open | 40 |
+| `EVT-004` Family Fun Festival | `SES-004-A` | Open | 150 |
+
+Seeded users: `USR-042`, `USR-043`, `USR-100`, and `USR-200`. Sessions start between 14 and 60 days after seeding.
 
 ### 3. Run the expiry worker
 

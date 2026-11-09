@@ -4,6 +4,8 @@ using FunEvents.Api.Reservations.Validation;
 using FunEvents.Application.Reservations.CancelReservation;
 using FunEvents.Application.Reservations.CreateReservation;
 using FunEvents.Application.Reservations.GetReservation;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace FunEvents.Api.Reservations;
 
@@ -32,12 +34,14 @@ public static class ReservationEndpoints
 
     private static async Task<IResult> CreateAsync(
         CreateReservationRequest? request,
+        [FromHeader(Name = "Idempotency-Key")]
+        [Description("Unique key for this reservation attempt. Reuse it when retrying the same request.")]
+        string? idempotencyKey,
         HttpContext context,
         CreateReservationHandler handler,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
-        var idempotencyKey = context.Request.Headers["Idempotency-Key"].FirstOrDefault();
         var validationError = CreateReservationRequestValidator.Validate(request, idempotencyKey);
         if (validationError is not null)
             return ReservationHttpResultMapper.FromValidationError(validationError);
