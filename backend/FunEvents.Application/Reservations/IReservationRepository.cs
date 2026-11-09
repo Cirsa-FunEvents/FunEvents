@@ -14,6 +14,11 @@ public interface IReservationRepository
     Task<Reservation?> GetByCodeAsync(
         string reservationCode,
         string channelId,
+        CancellationToken cancellationToken);
+
+    Task<bool> ExpireIfDueAsync(
+        string reservationCode,
+        string channelId,
         DateTimeOffset nowUtc,
         CancellationToken cancellationToken);
 

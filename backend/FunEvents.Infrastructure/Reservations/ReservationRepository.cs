@@ -92,14 +92,17 @@ public sealed class ReservationRepository(FunEventsDbContext db) : IReservationR
     public async Task<Reservation?> GetByCodeAsync(
         string reservationCode,
         string channelId,
-        DateTimeOffset nowUtc,
-        CancellationToken cancellationToken)
-    {
-        await TransitionToExpiredAsync(reservationCode, channelId, nowUtc, cancellationToken);
-        return await db.Reservations.AsNoTracking().SingleOrDefaultAsync(
+        CancellationToken cancellationToken) =>
+        await db.Reservations.AsNoTracking().SingleOrDefaultAsync(
             x => x.ReservationCode == reservationCode && x.ChannelId == channelId,
             cancellationToken);
-    }
+
+    public Task<bool> ExpireIfDueAsync(
+        string reservationCode,
+        string channelId,
+        DateTimeOffset nowUtc,
+        CancellationToken cancellationToken) =>
+        TransitionToExpiredAsync(reservationCode, channelId, nowUtc, cancellationToken);
 
     public async Task<Reservation?> CancelAsync(
         string reservationCode,
@@ -139,10 +142,7 @@ public sealed class ReservationRepository(FunEventsDbContext db) : IReservationR
 
         await ReleaseInventoryAsync(reservation, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        db.ChangeTracker.Clear();
-        return await db.Reservations.AsNoTracking().SingleAsync(
-            x => x.ReservationCode == reservationCode && x.ChannelId == channelId,
-            cancellationToken);
+        return reservation;
     }
 
     public async Task<int> ExpireDueAsync(
@@ -202,7 +202,6 @@ public sealed class ReservationRepository(FunEventsDbContext db) : IReservationR
 
         await ReleaseInventoryAsync(reservation, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        db.ChangeTracker.Clear();
         return true;
     }
 

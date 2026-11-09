@@ -36,6 +36,7 @@ public sealed class Reservation
             throw new ArgumentOutOfRangeException(nameof(holdDuration), "Hold duration must be positive.");
 
         var id = Guid.NewGuid();
+        var createdAt = createdAtUtc.ToUniversalTime();
         return new Reservation
         {
             Id = id,
@@ -46,8 +47,8 @@ public sealed class Reservation
             ChannelId = channelId,
             Quantity = quantity,
             Status = ReservationStatus.Pending,
-            CreatedAtUtc = createdAtUtc.ToUniversalTime(),
-            ExpiresAtUtc = createdAtUtc.ToUniversalTime().Add(holdDuration)
+            CreatedAtUtc = createdAt,
+            ExpiresAtUtc = createdAt.Add(holdDuration)
         };
     }
 

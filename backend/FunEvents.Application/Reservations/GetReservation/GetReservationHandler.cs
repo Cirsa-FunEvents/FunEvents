@@ -5,13 +5,20 @@ namespace FunEvents.Application.Reservations.GetReservation;
 
 public sealed class GetReservationHandler(IReservationRepository reservations)
 {
-    public Task<Reservation?> HandleAsync(
+    public async Task<Reservation?> HandleAsync(
         GetReservationQuery query,
         DateTimeOffset nowUtc,
-        CancellationToken cancellationToken) =>
-        reservations.GetByCodeAsync(
+        CancellationToken cancellationToken)
+    {
+        await reservations.ExpireIfDueAsync(
             query.ReservationCode,
             query.ChannelId,
             nowUtc,
             cancellationToken);
+
+        return await reservations.GetByCodeAsync(
+            query.ReservationCode,
+            query.ChannelId,
+            cancellationToken);
+    }
 }
