@@ -2,8 +2,11 @@ using FunEvents.Api.Security.PartnerApiKey;
 using FunEvents.Api.Reservations.Contracts;
 using FunEvents.Api.Reservations.Validation;
 using FunEvents.Application.Reservations.CancelReservation;
+using FunEvents.Application.Reservations.CancelReservation.Dtos;
 using FunEvents.Application.Reservations.CreateReservation;
+using FunEvents.Application.Reservations.CreateReservation.Dtos;
 using FunEvents.Application.Reservations.GetReservation;
+using FunEvents.Application.Reservations.GetReservation.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 
@@ -38,7 +41,7 @@ public static class ReservationEndpoints
         [Description("Unique key for this reservation attempt. Reuse it when retrying the same request.")]
         string? idempotencyKey,
         HttpContext context,
-        CreateReservationHandler handler,
+        CreateReservationUseCase useCase,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -48,8 +51,8 @@ public static class ReservationEndpoints
 
         var channelId = (string)context.Items[PartnerApiKeyEndpointFilter.ChannelIdItemKey]!;
         var validRequest = request!;
-        var result = await handler.HandleAsync(
-            new CreateReservationCommand(
+        var result = await useCase.ExecuteAsync(
+            new CreateReservationInput(
                 validRequest.EventCode.Trim(),
                 validRequest.SessionCode.Trim(),
                 validRequest.UserCode.Trim(),
@@ -72,13 +75,13 @@ public static class ReservationEndpoints
     private static async Task<IResult> GetAsync(
         string reservationCode,
         HttpContext context,
-        GetReservationHandler handler,
+        GetReservationUseCase useCase,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         var channelId = (string)context.Items[PartnerApiKeyEndpointFilter.ChannelIdItemKey]!;
-        var reservation = await handler.HandleAsync(
-            new GetReservationQuery(reservationCode, channelId),
+        var reservation = await useCase.ExecuteAsync(
+            new GetReservationInput(reservationCode, channelId),
             timeProvider.GetUtcNow(),
             cancellationToken);
 
@@ -88,13 +91,13 @@ public static class ReservationEndpoints
     private static async Task<IResult> CancelAsync(
         string reservationCode,
         HttpContext context,
-        CancelReservationHandler handler,
+        CancelReservationUseCase useCase,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         var channelId = (string)context.Items[PartnerApiKeyEndpointFilter.ChannelIdItemKey]!;
-        var reservation = await handler.HandleAsync(
-            new CancelReservationCommand(reservationCode, channelId),
+        var reservation = await useCase.ExecuteAsync(
+            new CancelReservationInput(reservationCode, channelId),
             timeProvider.GetUtcNow(),
             cancellationToken);
 

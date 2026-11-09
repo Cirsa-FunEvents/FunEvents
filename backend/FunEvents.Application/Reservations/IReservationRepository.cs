@@ -1,5 +1,5 @@
 using FunEvents.Domain.Reservations;
-using FunEvents.Application.Reservations.CreateReservation;
+using FunEvents.Application.Reservations.CreateReservation.Dtos;
 
 namespace FunEvents.Application.Reservations;
 

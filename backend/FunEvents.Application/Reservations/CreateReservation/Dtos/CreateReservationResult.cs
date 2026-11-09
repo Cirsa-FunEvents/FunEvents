@@ -1,6 +1,6 @@
 using FunEvents.Domain.Reservations;
 
-namespace FunEvents.Application.Reservations.CreateReservation;
+namespace FunEvents.Application.Reservations.CreateReservation.Dtos;
 
 public enum CreateReservationFailure
 {

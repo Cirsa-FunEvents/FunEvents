@@ -1,24 +1,25 @@
 using FunEvents.Application.Reservations;
+using FunEvents.Application.Reservations.GetReservation.Dtos;
 using FunEvents.Domain.Reservations;
 
 namespace FunEvents.Application.Reservations.GetReservation;
 
-public sealed class GetReservationHandler(IReservationRepository reservations)
+public sealed class GetReservationUseCase(IReservationRepository reservations)
 {
-    public async Task<Reservation?> HandleAsync(
-        GetReservationQuery query,
+    public async Task<Reservation?> ExecuteAsync(
+        GetReservationInput input,
         DateTimeOffset nowUtc,
         CancellationToken cancellationToken)
     {
         await reservations.ExpireIfDueAsync(
-            query.ReservationCode,
-            query.ChannelId,
+            input.ReservationCode,
+            input.ChannelId,
             nowUtc,
             cancellationToken);
 
         return await reservations.GetByCodeAsync(
-            query.ReservationCode,
-            query.ChannelId,
+            input.ReservationCode,
+            input.ChannelId,
             cancellationToken);
     }
 }

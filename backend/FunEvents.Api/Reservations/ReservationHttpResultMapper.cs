@@ -1,6 +1,6 @@
 using FunEvents.Api.Reservations.Contracts;
 using FunEvents.Api.Reservations.Validation;
-using FunEvents.Application.Reservations.CreateReservation;
+using FunEvents.Application.Reservations.CreateReservation.Dtos;
 using FunEvents.Domain.Reservations;
 
 namespace FunEvents.Api.Reservations;

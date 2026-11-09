@@ -1,6 +1,6 @@
-namespace FunEvents.Application.Reservations.CreateReservation;
+namespace FunEvents.Application.Reservations.CreateReservation.Dtos;
 
-public sealed record CreateReservationCommand(
+public sealed record CreateReservationInput(
     string EventCode,
     string SessionCode,
     string UserCode,

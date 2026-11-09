@@ -1,17 +1,18 @@
 using FunEvents.Application.Reservations;
+using FunEvents.Application.Reservations.CancelReservation.Dtos;
 using FunEvents.Domain.Reservations;
 
 namespace FunEvents.Application.Reservations.CancelReservation;
 
-public sealed class CancelReservationHandler(IReservationRepository reservations)
+public sealed class CancelReservationUseCase(IReservationRepository reservations)
 {
-    public Task<Reservation?> HandleAsync(
-        CancelReservationCommand command,
+    public Task<Reservation?> ExecuteAsync(
+        CancelReservationInput input,
         DateTimeOffset nowUtc,
         CancellationToken cancellationToken) =>
         reservations.CancelAsync(
-            command.ReservationCode,
-            command.ChannelId,
+            input.ReservationCode,
+            input.ChannelId,
             nowUtc,
             cancellationToken);
 }

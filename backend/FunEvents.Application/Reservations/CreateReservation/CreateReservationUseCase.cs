@@ -1,35 +1,36 @@
 using FunEvents.Application.Reservations;
+using FunEvents.Application.Reservations.CreateReservation.Dtos;
 using FunEvents.Domain.Reservations;
 
 namespace FunEvents.Application.Reservations.CreateReservation;
 
-public sealed class CreateReservationHandler(
+public sealed class CreateReservationUseCase(
     IReservationRepository reservations,
     ReservationPolicy policy)
 {
-    public async Task<CreateReservationResult> HandleAsync(
-        CreateReservationCommand command,
+    public async Task<CreateReservationResult> ExecuteAsync(
+        CreateReservationInput input,
         DateTimeOffset nowUtc,
         CancellationToken cancellationToken)
     {
-        if (command.Quantity <= 0 || command.Quantity > policy.MaxQuantityPerReservation)
+        if (input.Quantity <= 0 || input.Quantity > policy.MaxQuantityPerReservation)
             return new(null, CreateReservationFailure.InvalidQuantity);
 
         var reservation = Reservation.Create(
-            command.EventCode,
-            command.SessionCode,
-            command.UserCode,
-            command.ChannelId,
-            command.Quantity,
+            input.EventCode,
+            input.SessionCode,
+            input.UserCode,
+            input.ChannelId,
+            input.Quantity,
             nowUtc,
             policy.HoldDuration);
 
         var fingerprint = RequestFingerprint.Create(
-            command.EventCode, command.SessionCode, command.UserCode, command.Quantity);
+            input.EventCode, input.SessionCode, input.UserCode, input.Quantity);
 
         return await reservations.TryCreateAsync(
             reservation,
-            command.IdempotencyKey,
+            input.IdempotencyKey,
             fingerprint,
             cancellationToken);
     }

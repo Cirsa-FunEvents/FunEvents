@@ -1,8 +1,11 @@
 @FunEvents.Api_HostAddress = http://localhost:5053
-@ApiKey = <set-a-local-user-secret>
-@IdempotencyKey = 5bf7893b-aeab-4f32-8b38-89373a4812e1
+@ApiKey = xxx
+@IdempotencyKey = reservation-demo-001
 
 ### Create a reservation
+# Run this first. Use a new IdempotencyKey for a new reservation attempt.
+# Keep the same key and request body when retrying this operation.
+# @name createReservation
 POST {{FunEvents.Api_HostAddress}}/api/v1/reservations
 X-Api-Key: {{ApiKey}}
 Idempotency-Key: {{IdempotencyKey}}
@@ -15,6 +18,33 @@ Accept: application/json
   "userCode": "USR-042",
   "quantity": 2
 }
+
+@reservationCode = {{createReservation.response.body.$.reservationCode}}
+
+### Retry the create request with the same idempotency key
+# This should return the original reservation instead of reserving tickets again.
+POST {{FunEvents.Api_HostAddress}}/api/v1/reservations
+X-Api-Key: {{ApiKey}}
+Idempotency-Key: {{IdempotencyKey}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "eventCode": "EVT-001",
+  "sessionCode": "SES-001-A",
+  "userCode": "USR-042",
+  "quantity": 2
+}
+
+### Get the created reservation
+GET {{FunEvents.Api_HostAddress}}/api/v1/reservations/{{reservationCode}}
+X-Api-Key: {{ApiKey}}
+Accept: application/json
+
+### Cancel the created reservation
+POST {{FunEvents.Api_HostAddress}}/api/v1/reservations/{{reservationCode}}/cancel
+X-Api-Key: {{ApiKey}}
+Accept: application/json
 
 ### Health check
 GET {{FunEvents.Api_HostAddress}}/health

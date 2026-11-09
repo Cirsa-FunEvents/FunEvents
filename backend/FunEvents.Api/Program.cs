@@ -21,9 +21,9 @@ builder.Services.AddHealthChecks();
 builder.Services.Configure<PartnerApiKeyOptions>(
     builder.Configuration.GetSection("PartnerApiKeys"));
 builder.Services.AddScoped<PartnerApiKeyEndpointFilter>();
-builder.Services.AddScoped<CreateReservationHandler>();
-builder.Services.AddScoped<GetReservationHandler>();
-builder.Services.AddScoped<CancelReservationHandler>();
+builder.Services.AddScoped<CreateReservationUseCase>();
+builder.Services.AddScoped<GetReservationUseCase>();
+builder.Services.AddScoped<CancelReservationUseCase>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 var holdDuration = builder.Configuration.GetValue("ReservationPolicy:HoldDuration", TimeSpan.FromMinutes(10));
