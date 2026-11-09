@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "aspire",
+      "request": "launch",
+      "name": "Aspire: Launch AppHost",
+      "program": "${workspaceFolder}",
+      "env": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "ASPIRE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}

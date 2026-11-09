@@ -1,6 +1,7 @@
+using FunEvents.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace FunEvents.Infrastructure.Persistence;
+namespace FunEvents.Migrations.Seeding.Development;
 
 public static class DevelopmentDataSeeder
 {

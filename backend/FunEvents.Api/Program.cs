@@ -6,6 +6,7 @@ using FunEvents.Application.Reservations.CreateReservation;
 using FunEvents.Application.Reservations.GetReservation;
 using FunEvents.Infrastructure;
 using FunEvents.Infrastructure.Persistence;
+using FunEvents.Migrations.Seeding.Development;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
