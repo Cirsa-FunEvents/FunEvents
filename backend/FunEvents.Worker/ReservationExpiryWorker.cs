@@ -1,4 +1,4 @@
-using FunEvents.Application.Reservations.Repositories;
+using FunEvents.Application.Reservations.ExpireReservations;
 
 namespace FunEvents.Worker;
 
@@ -16,8 +16,8 @@ public sealed class ReservationExpiryWorker(
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
-                var reservations = scope.ServiceProvider.GetRequiredService<IReservationRepository>();
-                var expired = await reservations.ExpireDueAsync(
+                var expiry = scope.ServiceProvider.GetRequiredService<ExpireReservationsUseCase>();
+                var expired = await expiry.ExpireDueAsync(
                     DateTimeOffset.UtcNow, 100, stoppingToken);
                 if (expired > 0)
                     logger.LogInformation("Expired {ReservationCount} reservations", expired);

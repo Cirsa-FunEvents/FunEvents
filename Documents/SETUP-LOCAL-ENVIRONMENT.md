@@ -73,8 +73,9 @@ The AppHost prints the Aspire Dashboard address and the API endpoint when it sta
 - Create reservation: `POST /api/v1/reservations`
 - Get reservation: `GET /api/v1/reservations/{reservationCode}`
 - Cancel reservation: `POST /api/v1/reservations/{reservationCode}/cancel`
+- Process simulated payment: `POST /api/v1/reservations/{reservationCode}/payments`
 
-In Scalar, use **Authorize** to enter the `X-Api-Key` for the `console` channel. The create-reservation operation documents `Idempotency-Key` as a request header; reuse that key only when retrying the same request.
+In Scalar, use **Authorize** to enter the `X-Api-Key` for the `console` channel. Reservation creation and payment processing use `Idempotency-Key`; reuse a key only when retrying the same operation. The fake payment provider randomly returns `Pending`, `Succeeded`, or `Declined`. Success confirms the reservation. A late success that cannot confirm an expired or otherwise unavailable reservation is recorded as `RefundRequired`; no refund is executed.
 
 ### Run the console client
 
@@ -88,7 +89,7 @@ FUN_EVENTS_API_KEY=local-console-secret \
 dotnet run --project frontend/console/FunEvents.Console/FunEvents.Console.csproj
 ```
 
-The client offers create, read, cancel, and exit actions. Create prompts for event, session, user, and quantity; the seeded sample codes are defaults. Read and cancel prompt for a reservation code. Each action prints the API result and returns to the menu. Create sends the reservation over HTTP with a generated idempotency key.
+The client offers create, read, cancel, simulated payment, and exit actions. Create prompts for event, session, user, and quantity; the seeded sample codes are defaults. Read, cancel, and payment prompt for a reservation code. Payment generates an idempotency key; reuse the displayed key when retrying an attempt that remains pending. Each action prints the API result and returns to the menu. The API persists its payment attempt and reservation state in PostgreSQL.
 
 The console client reads its local API URL and key from .NET User Secrets. Set them from the repository root:
 
@@ -171,7 +172,7 @@ curl -i http://localhost:5053/api/v1/reservations \
   -d '{"eventCode":"EVT-001","sessionCode":"SES-001-A","userCode":"USR-042","quantity":2}'
 ```
 
-Use the returned reservation code to retrieve or cancel the reservation. Reservation reads and cancellations are scoped to the channel selected by the API key.
+Use the returned reservation code to retrieve, cancel, or make a simulated payment for the reservation. Reservation and payment operations are scoped to the channel selected by the API key. The payment API creates a pending attempt before calling the fake provider, then saves the payment result and any reservation confirmation together in one database transaction.
 
 ## Stop local services
 

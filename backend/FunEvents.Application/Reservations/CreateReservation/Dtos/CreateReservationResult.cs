@@ -1,6 +1,4 @@
 using FunEvents.Application.Reservations.Dtos;
-using FunEvents.Application.Reservations.Repositories;
-
 namespace FunEvents.Application.Reservations.CreateReservation.Dtos;
 
 public sealed record CreateReservationResult(

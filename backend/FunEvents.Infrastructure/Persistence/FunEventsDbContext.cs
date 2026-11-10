@@ -1,4 +1,5 @@
 using FunEvents.Domain.Reservations;
+using FunEvents.Domain.Payments;
 using Microsoft.EntityFrameworkCore;
 
 namespace FunEvents.Infrastructure.Persistence;
@@ -10,6 +11,7 @@ public sealed class FunEventsDbContext(DbContextOptions<FunEventsDbContext> opti
     public DbSet<UserRecord> Users => Set<UserRecord>();
     public DbSet<SessionInventoryRecord> SessionInventory => Set<SessionInventoryRecord>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
+    public DbSet<PaymentAttempt> PaymentAttempts => Set<PaymentAttempt>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -64,7 +66,10 @@ public sealed class FunEventsDbContext(DbContextOptions<FunEventsDbContext> opti
             entity.Property(x => x.SessionCode).HasMaxLength(64).IsRequired();
             entity.Property(x => x.UserCode).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ChannelId).HasMaxLength(100).IsRequired();
-            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsConcurrencyToken();
             entity.HasOne<EventSessionRecord>().WithMany()
                 .HasForeignKey(x => new { x.EventCode, x.SessionCode })
                 .OnDelete(DeleteBehavior.Restrict);
@@ -81,6 +86,30 @@ public sealed class FunEventsDbContext(DbContextOptions<FunEventsDbContext> opti
             entity.Property(x => x.IdempotencyKey).HasMaxLength(200);
             entity.Property(x => x.RequestFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ReservationCode).HasMaxLength(40).IsRequired();
+        });
+
+        modelBuilder.Entity<PaymentAttempt>(entity =>
+        {
+            entity.ToTable("payment_attempts");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.PaymentCode).IsUnique();
+            entity.HasIndex(x => new { x.ChannelId, x.IdempotencyKey }).IsUnique();
+            entity.HasIndex(x => x.ReservationCode)
+                .IsUnique()
+                .HasFilter("\"Status\" = 'Pending'")
+                .HasDatabaseName("ux_payment_attempts_pending_reservation");
+            entity.Property(x => x.PaymentCode).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.ReservationCode).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.ChannelId).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.IdempotencyKey).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(24)
+                .IsRequired()
+                .IsConcurrencyToken();
+            entity.Property(x => x.ProviderReference).HasMaxLength(100);
+            entity.HasOne<Reservation>().WithMany().HasForeignKey(x => x.ReservationCode)
+                .HasPrincipalKey(x => x.ReservationCode).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

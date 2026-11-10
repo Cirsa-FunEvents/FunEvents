@@ -4,6 +4,8 @@ using FunEvents.Application.Reservations;
 using FunEvents.Application.Reservations.CancelReservation;
 using FunEvents.Application.Reservations.CreateReservation;
 using FunEvents.Application.Reservations.GetReservation;
+using FunEvents.Application.Reservations.ExpireReservations;
+using FunEvents.Application.Payments.ProcessPayment;
 using FunEvents.Infrastructure;
 using FunEvents.Infrastructure.Persistence;
 using FunEvents.Migrations.Seeding.Development;
@@ -24,6 +26,8 @@ builder.Services.AddScoped<PartnerApiKeyEndpointFilter>();
 builder.Services.AddScoped<CreateReservationUseCase>();
 builder.Services.AddScoped<GetReservationUseCase>();
 builder.Services.AddScoped<CancelReservationUseCase>();
+builder.Services.AddScoped<ExpireReservationsUseCase>();
+builder.Services.AddScoped<ProcessPaymentUseCase>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 var holdDuration = builder.Configuration.GetValue("ReservationPolicy:HoldDuration", TimeSpan.FromMinutes(10));

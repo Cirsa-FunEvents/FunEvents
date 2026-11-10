@@ -32,6 +32,7 @@ while (true)
     Console.WriteLine("1. Create reservation");
     Console.WriteLine("2. Read reservation");
     Console.WriteLine("3. Cancel reservation");
+    Console.WriteLine("4. Pay reservation (simulated)");
     Console.WriteLine("0. Exit");
     Console.Write("Choose an action: ");
 
@@ -46,12 +47,15 @@ while (true)
         case "3":
             await CancelReservationAsync(httpClient, apiKey);
             break;
+        case "4":
+            await PayReservationAsync(httpClient, apiKey);
+            break;
         case "0":
         case null:
             Console.WriteLine("Goodbye.");
             return 0;
         default:
-            Console.WriteLine("Choose 1, 2, 3, or 0.");
+            Console.WriteLine("Choose 1, 2, 3, 4, or 0.");
             break;
     }
 }
@@ -97,6 +101,23 @@ static async Task CancelReservationAsync(HttpClient httpClient, string apiKey)
         "Cancellation result:");
 }
 
+static async Task PayReservationAsync(HttpClient httpClient, string apiKey)
+{
+    var reservationCode = ReadRequired("Reservation code");
+    var suggestedKey = Guid.NewGuid().ToString("N");
+    var idempotencyKey = ReadValue("Payment idempotency key (reuse to retry pending attempt)", suggestedKey);
+
+    Console.WriteLine($"Starting simulated payment (idempotency key: {idempotencyKey})...");
+    await SendAsync(
+        httpClient,
+        apiKey,
+        HttpMethod.Post,
+        $"/api/v1/reservations/{Uri.EscapeDataString(reservationCode)}/payments",
+        "Payment result:",
+        idempotencyKey: idempotencyKey,
+        printSuccess: PrintPayment);
+}
+
 static async Task SendAsync(
     HttpClient httpClient,
     string apiKey,
@@ -104,7 +125,8 @@ static async Task SendAsync(
     string path,
     string successMessage,
     object? body = null,
-    string? idempotencyKey = null)
+    string? idempotencyKey = null,
+    Action<JsonElement>? printSuccess = null)
 {
     using var request = new HttpRequestMessage(method, path);
     request.Headers.Add("X-Api-Key", apiKey);
@@ -135,7 +157,13 @@ static async Task SendAsync(
         }
 
         Console.WriteLine(successMessage);
-        PrintReservation(responseBody);
+        if (printSuccess is null)
+            PrintReservation(responseBody);
+        else
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            printSuccess(document.RootElement);
+        }
     }
     catch (HttpRequestException exception)
     {
@@ -147,6 +175,15 @@ static async Task SendAsync(
         Console.WriteLine("The API returned an invalid JSON response.");
         Console.WriteLine(exception.Message);
     }
+}
+
+static void PrintPayment(JsonElement payment)
+{
+    PrintProperty(payment, "paymentCode", "Payment code");
+    PrintProperty(payment, "paymentStatus", "Payment status");
+    PrintProperty(payment, "reservationCode", "Reservation code");
+    PrintProperty(payment, "reservationStatus", "Reservation status");
+    PrintProperty(payment, "providerReference", "Simulated provider reference");
 }
 
 static string ReadValue(string label, string defaultValue)

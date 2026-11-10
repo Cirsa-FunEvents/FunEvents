@@ -1,18 +1,20 @@
-using FunEvents.Application.Reservations.Repositories;
+using FunEvents.Application.Repositories.Reservations;
+using FunEvents.Application.Reservations.ExpireReservations;
 using FunEvents.Application.Reservations.GetReservation.Dtos;
 using FunEvents.Application.Reservations.Dtos;
-using FunEvents.Domain.Reservations;
 
 namespace FunEvents.Application.Reservations.GetReservation;
 
-public sealed class GetReservationUseCase(IReservationRepository reservations)
+public sealed class GetReservationUseCase(
+    IReservationRepository reservations,
+    ExpireReservationsUseCase expiry)
 {
     public async Task<GetReservationResult> ExecuteAsync(
         GetReservationInput input,
         DateTimeOffset nowUtc,
         CancellationToken cancellationToken)
     {
-        await reservations.ExpireIfDueAsync(
+        await expiry.ExpireIfDueAsync(
             input.ReservationCode,
             input.ChannelId,
             nowUtc,

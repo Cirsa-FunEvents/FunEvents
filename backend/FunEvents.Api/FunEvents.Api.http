@@ -1,6 +1,7 @@
 @FunEvents.Api_HostAddress = http://localhost:5053
 @ApiKey = c29b452e5f85cd802e0940699f5e1a33295ed3a43afbe202472c625442752764
 @IdempotencyKey = reservation-demo-001
+@PaymentIdempotencyKey = payment-demo-001
 
 ### Create a reservation
 # Run this first. Use a new IdempotencyKey for a new reservation attempt.
@@ -39,6 +40,13 @@ Accept: application/json
 ### Get the created reservation
 GET {{FunEvents.Api_HostAddress}}/api/v1/reservations/{{reservationCode}}
 X-Api-Key: {{ApiKey}}
+Accept: application/json
+
+### Process a simulated payment for the reservation
+# Use a fresh key for a new payment attempt; reuse the key to retry an in-flight attempt.
+POST {{FunEvents.Api_HostAddress}}/api/v1/reservations/{{reservationCode}}/payments
+X-Api-Key: {{ApiKey}}
+Idempotency-Key: {{PaymentIdempotencyKey}}
 Accept: application/json
 
 ### Cancel the created reservation

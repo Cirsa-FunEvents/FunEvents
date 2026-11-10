@@ -71,4 +71,16 @@ public sealed class Reservation
         Status = ReservationStatus.Expired;
         return true;
     }
+
+    public bool TryConfirm(DateTimeOffset nowUtc)
+    {
+        if (Status != ReservationStatus.Pending || ExpiresAtUtc <= nowUtc.ToUniversalTime())
+            return false;
+
+        Status = ReservationStatus.Confirmed;
+        return true;
+    }
+
+    public bool CanStartPaymentAt(DateTimeOffset nowUtc) =>
+        Status == ReservationStatus.Pending && ExpiresAtUtc > nowUtc.ToUniversalTime();
 }

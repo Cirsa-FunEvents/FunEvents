@@ -2,7 +2,7 @@ using FunEvents.Api.Reservations.Contracts;
 using FunEvents.Api.Reservations.Validation;
 using FunEvents.Application.Reservations.CreateReservation.Dtos;
 using FunEvents.Application.Reservations.Dtos;
-using FunEvents.Application.Reservations.Repositories;
+using FunEvents.Application.Payments.ProcessPayment.Dtos;
 
 namespace FunEvents.Api.Reservations;
 
@@ -31,6 +31,36 @@ public static class ReservationHttpResultMapper
             "reservation_not_found",
             "The reservation was not found.")
         : Results.Ok(ReservationResponse.From(reservation));
+
+    public static IResult FromPaymentResult(PaymentProcessingResult result)
+    {
+        if (result.Failure is { } failure)
+        {
+            var (status, code, detail) = failure switch
+            {
+                PaymentFailure.ReservationNotFound =>
+                    (StatusCodes.Status404NotFound, "reservation_not_found", "The reservation was not found."),
+                PaymentFailure.ReservationNotPayable =>
+                    (StatusCodes.Status409Conflict, "reservation_not_payable", "The reservation is no longer payable."),
+                PaymentFailure.PaymentAlreadyPending =>
+                    (StatusCodes.Status409Conflict, "payment_already_pending", "A payment attempt is already pending for this reservation."),
+                PaymentFailure.IdempotencyKeyReused =>
+                    (StatusCodes.Status409Conflict, "idempotency_key_reused", "The idempotency key was already used for another payment attempt."),
+                _ => (StatusCodes.Status500InternalServerError, "payment_failed", "The payment could not be processed.")
+            };
+            return Problem(status, code, detail);
+        }
+
+        var payment = result.Payment!;
+        return Results.Ok(new PaymentResponse(
+            payment.PaymentCode,
+            payment.ReservationCode,
+            payment.PaymentStatus.ToString(),
+            payment.ReservationStatus.ToString(),
+            payment.ProviderReference,
+            payment.CreatedAtUtc,
+            payment.UpdatedAtUtc));
+    }
 
     private static IResult FromCreateFailure(CreateReservationFailure failure) => failure switch
     {

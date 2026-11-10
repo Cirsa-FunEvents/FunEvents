@@ -1,4 +1,4 @@
-namespace FunEvents.Application.Reservations.Repositories;
+namespace FunEvents.Application.Reservations.CreateReservation.Dtos;
 
 public enum CreateReservationFailure
 {

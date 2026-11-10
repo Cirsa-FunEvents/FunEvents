@@ -7,6 +7,8 @@ using FunEvents.Application.Reservations.CreateReservation;
 using FunEvents.Application.Reservations.CreateReservation.Dtos;
 using FunEvents.Application.Reservations.GetReservation;
 using FunEvents.Application.Reservations.GetReservation.Dtos;
+using FunEvents.Application.Payments.ProcessPayment;
+using FunEvents.Application.Payments.ProcessPayment.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 
@@ -31,6 +33,10 @@ public static class ReservationEndpoints
         group.MapPost("/{reservationCode}/cancel", CancelAsync)
             .WithName("CancelReservation")
             .WithSummary("Cancel a pending reservation and release its inventory");
+
+        group.MapPost("/{reservationCode}/payments", ProcessPaymentAsync)
+            .WithName("ProcessReservationPayment")
+            .WithSummary("Run a simulated payment for a pending reservation");
 
         return group;
     }
@@ -102,5 +108,29 @@ public static class ReservationEndpoints
             cancellationToken);
 
         return ReservationHttpResultMapper.FromReservation(result.Reservation);
+    }
+
+    private static async Task<IResult> ProcessPaymentAsync(
+        string reservationCode,
+        [FromHeader(Name = "Idempotency-Key")]
+        [Description("Unique key for this payment attempt. Reuse it when retrying the same attempt.")]
+        string? idempotencyKey,
+        HttpContext context,
+        ProcessPaymentUseCase useCase,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey) || idempotencyKey.Length > 200)
+            return ReservationHttpResultMapper.FromValidationError(new(
+                "invalid_idempotency_key",
+                "Provide an Idempotency-Key header with 1 to 200 characters."));
+
+        var channelId = (string)context.Items[PartnerApiKeyEndpointFilter.ChannelIdItemKey]!;
+        var result = await useCase.ExecuteAsync(
+            new ProcessPaymentInput(reservationCode, channelId, idempotencyKey),
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return ReservationHttpResultMapper.FromPaymentResult(result);
     }
 }
