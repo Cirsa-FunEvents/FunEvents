@@ -20,6 +20,16 @@ dotnet --version
 docker version
 ```
 
+## Trust the Aspire HTTPS development certificate
+
+Aspire may need its HTTPS development certificate trusted by the operating system, especially if the dashboard or AppHost reports an SSL/TLS certificate-chain error. Run this once before starting Aspire, or again if development certificates were cleaned or regenerated:
+
+```sh
+aspire certs trust
+```
+
+The command creates the certificate if needed and configures it as trusted. See the [Aspire CLI certificate command](https://aspire.dev/reference/cli/commands/aspire-certs-trust/) for details. After trusting the certificate, restart the AppHost and VS Code Aspire session if they were already running.
+
 ## Configure a local partner API key
 
 The API uses a partner API key to identify the sales channel. Store a development key with .NET user-secrets rather than adding it to a committed settings file:
@@ -38,8 +48,7 @@ The AppHost persists PostgreSQL data in a Docker volume and reads the database p
 From the repository root, generate and save a local password:
 
 ```sh
-aspire secret set Parameters:postgres-password "$(openssl rand -base64 32)" \
-  --apphost orchestration/FunEvents.AppHost/FunEvents.AppHost.csproj
+aspire secret set Parameters:postgres-password "your-password" --apphost orchestration/FunEvents.AppHost/FunEvents.AppHost.csproj
 ```
 
 If you already started PostgreSQL before configuring this persistent password, its existing volume may contain a database initialized with a different password. If the local database data is disposable, stop Aspire and remove only the volume attached to this AppHost's PostgreSQL resource in Docker Desktop. On the next run, PostgreSQL creates a fresh database using the configured secret, and the API reapplies migrations and development seed data. If you need to preserve the data, keep the volume and update the PostgreSQL `postgres` role password in the existing database to match the Aspire secret before restarting.
@@ -137,15 +146,15 @@ dotnet run --project backend/FunEvents.Api/FunEvents.Api.csproj --launch-profile
 
 The checked-in `http` launch profile sets `ASPNETCORE_ENVIRONMENT=Development` and listens at `http://localhost:5053`. The API reads the database connection string from Aspire automatically when hosted by AppHost. In Development, API startup applies migrations and idempotently adds this sample catalog. Re-running the API does not reset inventory already consumed by reservations.
 
-| Event | Session | Sales | Initial inventory |
-| --- | --- | --- | ---: |
-| `EVT-001` FunEvents Demo Concert | `SES-001-A` | Open | 100 |
-| `EVT-001` FunEvents Demo Concert | `SES-001-B` | Open | 80 |
-| `EVT-002` The Midnight Players: Live Theatre | `SES-002-A` | Open | 60 |
-| `EVT-002` The Midnight Players: Live Theatre | `SES-002-B` | Closed | 60 |
-| `EVT-003` City Lights Comedy Night | `SES-003-A` | Open | 40 |
-| `EVT-003` City Lights Comedy Night | `SES-003-B` | Open | 40 |
-| `EVT-004` Family Fun Festival | `SES-004-A` | Open | 150 |
+| Event                                        | Session     | Sales  | Initial inventory |
+| -------------------------------------------- | ----------- | ------ | ----------------: |
+| `EVT-001` FunEvents Demo Concert             | `SES-001-A` | Open   |               100 |
+| `EVT-001` FunEvents Demo Concert             | `SES-001-B` | Open   |                80 |
+| `EVT-002` The Midnight Players: Live Theatre | `SES-002-A` | Open   |                60 |
+| `EVT-002` The Midnight Players: Live Theatre | `SES-002-B` | Closed |                60 |
+| `EVT-003` City Lights Comedy Night           | `SES-003-A` | Open   |                40 |
+| `EVT-003` City Lights Comedy Night           | `SES-003-B` | Open   |                40 |
+| `EVT-004` Family Fun Festival                | `SES-004-A` | Open   |               150 |
 
 Seeded users: `USR-042`, `USR-043`, `USR-100`, and `USR-200`. Sessions start between 14 and 60 days after seeding.
 
