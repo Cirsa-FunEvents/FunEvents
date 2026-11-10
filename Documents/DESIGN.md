@@ -4,7 +4,7 @@
 
 Diseñar una plataforma de venta de entradas para FunEvents que atienda el portal propio, las oficinas de atención al cliente y los canales de colaboradores. La plataforma debe permitir que cada canal integre la compra en su propia experiencia sin perder el control central de catálogo, disponibilidad y emisión de entradas.
 
-Este documento define la arquitectura objetivo y el alcance del prototipo técnico. **No incluye implementación todavía.** El prototipo de la Parte 2 cubrirá únicamente la reserva de entradas para un evento y usuario conocidos mediante un cliente de consola que consume una API web.
+Este documento define la arquitectura objetivo y describe el prototipo técnico de la Parte 2: un cliente de consola que consume una API web para gestionar reservas, pagos simulados y expiración de holds.
 
 ## 2. Requisitos y supuestos
 
@@ -21,7 +21,7 @@ Este documento define la arquitectura objetivo y el alcance del prototipo técni
 
 - El evento y el usuario ya existen y se identifican por código.
 - La petición de reserva indica una sesión y una cantidad de entradas; el código de evento por sí solo no determina qué función se desea.
-- El prototipo reserva entradas sin realizar cobro. La reserva queda temporalmente pendiente de confirmación y vence tras un plazo configurable.
+- El prototipo no realiza cobros reales. La reserva queda temporalmente pendiente de confirmación y vence tras un plazo configurable; el proveedor simulado devuelve resultados de pago.
 - Habrá una base de datos relacional para persistir inventario y reservas. PostgreSQL es la opción propuesta.
 - Un canal colaborador se identifica por una credencial/API key en el prototipo. En producción se recomienda OAuth 2.0 Client Credentials, con permisos por colaborador y rotación de secretos.
 
@@ -76,19 +76,19 @@ Los módulos de dominio centrales conservan las invariantes que deben ser iguale
 
 Estos son límites lógicos; no implican que cada caja sea un despliegue independiente. El núcleo puede empezar como una aplicación modular. Los adaptadores de partners con requisitos de carga, aislamiento o ciclo de cambios propios sí pueden desplegarse por separado.
 
-| Componente | Propósito y responsabilidades |
-|---|---|
-| API gateway | Entrada pública; termina TLS, enruta peticiones a APIs/adaptadores y aplica políticas comunes como límites de tráfico y trazabilidad. No contiene reglas de reservas ni pagos. |
-| Adaptador por partner | Valida el esquema de autenticación propio del partner, traduce su contrato/datos y coordina su flujo de checkout. Llama al núcleo con identidad de servicio FunEvents. |
-| Ticketing core | API y casos de uso canónicos para canales propios y partners; aplica reglas comunes y delega en módulos de dominio. |
-| Catálogo | Eventos, recintos, sesiones, zonas y precios. |
-| Inventario y reservas | Disponibilidad, holds con expiración y prevención de sobreventa. |
-| Pedidos | Estado de la compra y vínculo entre reserva, comprador, canal, pago y entradas. |
-| Orquestación de pagos | Inicia y consulta pagos cuando FunEvents cobra; normaliza estados de proveedores y coordina su efecto en el pedido. No procesa el dinero por sí sola. |
-| Emisión de entradas | Genera y mantiene entradas/QR tras confirmarse el pedido; soporta entrega y validación en acceso. |
-| Almacén transaccional | Persiste el estado actual de dominio. En la primera versión puede ser una base relacional; los módulos acceden mediante interfaces y límites definidos, no escribiendo libremente cualquier tabla. |
-| Outbox y publicador | Registra eventos de integración en la misma transacción que el cambio de dominio y los publica de forma asíncrona. |
-| Procesos en segundo plano | Expiran holds, publican outbox, envían notificaciones y ejecutan conciliaciones; deben ser idempotentes y observables. |
+| Componente                | Propósito y responsabilidades                                                                                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API gateway               | Entrada pública; termina TLS, enruta peticiones a APIs/adaptadores y aplica políticas comunes como límites de tráfico y trazabilidad. No contiene reglas de reservas ni pagos.                     |
+| Adaptador por partner     | Valida el esquema de autenticación propio del partner, traduce su contrato/datos y coordina su flujo de checkout. Llama al núcleo con identidad de servicio FunEvents.                             |
+| Ticketing core            | API y casos de uso canónicos para canales propios y partners; aplica reglas comunes y delega en módulos de dominio.                                                                                |
+| Catálogo                  | Eventos, recintos, sesiones, zonas y precios.                                                                                                                                                      |
+| Inventario y reservas     | Disponibilidad, holds con expiración y prevención de sobreventa.                                                                                                                                   |
+| Pedidos                   | Estado de la compra y vínculo entre reserva, comprador, canal, pago y entradas.                                                                                                                    |
+| Orquestación de pagos     | Inicia y consulta pagos cuando FunEvents cobra; normaliza estados de proveedores y coordina su efecto en el pedido. No procesa el dinero por sí sola.                                              |
+| Emisión de entradas       | Genera y mantiene entradas/QR tras confirmarse el pedido; soporta entrega y validación en acceso.                                                                                                  |
+| Almacén transaccional     | Persiste el estado actual de dominio. En la primera versión puede ser una base relacional; los módulos acceden mediante interfaces y límites definidos, no escribiendo libremente cualquier tabla. |
+| Outbox y publicador       | Registra eventos de integración en la misma transacción que el cambio de dominio y los publica de forma asíncrona.                                                                                 |
+| Procesos en segundo plano | Expiran holds, publican outbox, envían notificaciones y ejecutan conciliaciones; deben ser idempotentes y observables.                                                                             |
 
 ### 3.3 Flujos y patrones detallados
 
@@ -214,9 +214,9 @@ Se recomienda empezar con estado relacional convencional, auditoría y outbox tr
 5. Las solicitudes repetidas con la misma clave de idempotencia devuelven el mismo resultado, sin crear otra reserva.
 6. Un proceso de expiración libera inventario de reservas vencidas.
 
-### Compra completa (fuera del prototipo)
+### Compra real y emisión de entradas (fuera del prototipo)
 
-La confirmación de pago debe ser idempotente. Tras el resultado del proveedor, el sistema confirma el pedido y emite entradas; si el pago falla o expira la reserva, libera inventario. Las llamadas al proveedor y las notificaciones no deben ejecutarse dentro de la transacción de inventario. Se recomienda patrón outbox para publicar eventos de forma fiable.
+La Parte 2 incluye un proveedor de pago falso para probar el flujo de estados, pero no procesa dinero real ni emite entradas. En producción, tras el resultado del proveedor real, el sistema confirmará el pedido y emitirá entradas; si el pago falla o expira la reserva, liberará inventario. Las llamadas al proveedor y las notificaciones no deben ejecutarse dentro de la transacción de inventario. Se recomienda patrón outbox para publicar eventos de forma fiable.
 
 ### Casos de uso de checkout con partners
 
@@ -304,27 +304,33 @@ Estas decisiones afectan a la arquitectura de producción, pero quedan fuera del
 
 ### Objetivo y alcance
 
-El prototipo demuestra un recorrido vertical mínimo: un cliente de consola solicita, a través de una API ASP.NET Core, una reserva para un evento, sesión y usuario conocidos. La API valida los códigos, reserva inventario de forma atómica, persiste la operación y devuelve el estado y la expiración. El propósito es validar el contrato API, la persistencia y la consistencia de la reserva; no implementar la plataforma completa ni los flujos de pago y conciliación de partners.
+El prototipo demuestra un recorrido vertical: un cliente de consola usa una API ASP.NET Core para crear, consultar y cancelar reservas de eventos, sesiones y usuarios conocidos. Incluye un endpoint de pago simulado y un worker que expira reservas pendientes. La API reserva inventario de forma atómica y persiste las reservas y los intentos de pago. El propósito es validar el contrato API, la persistencia, la consistencia de inventario y los límites entre API, casos de uso, proveedor simulado y proceso de fondo. No implementa cobros reales, emisión de entradas ni conciliación de pagos de partners.
 
-El cliente no accede directamente a la base de datos. La reserva no realiza cobro y queda pendiente hasta confirmarse o expirar. PostgreSQL es la base propuesta para conservar el estado entre llamadas.
+El cliente no accede directamente a la base de datos. La reserva queda pendiente hasta cancelarse, confirmarse mediante el flujo de pago simulado o expirar. PostgreSQL conserva el estado entre llamadas. Los datos de evento, sesión, usuario e inventario se cargan mediante la semilla de desarrollo; el prototipo no expone endpoints para consultar o administrar el catálogo.
 
 #### Arquitectura del prototipo
 
 ```mermaid
 flowchart LR
     CONSOLE[Cliente de consola] -->|HTTP JSON| API[ASP.NET Core Minimal API]
-    API --> USECASE[Servicio de reservas]
-    USECASE --> VALIDATE[Validación de evento, sesión y usuario]
-    USECASE --> INVENTORY[Control transaccional de inventario]
-    USECASE --> RESERVATION[Creación y consulta de reservas]
-    VALIDATE --> REPO[Interfaces de persistencia]
-    INVENTORY --> REPO
-    RESERVATION --> REPO
-    REPO --> DB[(PostgreSQL)]
+    API --> RESERVATIONS[Casos de uso de reservas]
+    API --> PAYMENTS[Proceso de pago]
+    RESERVATIONS --> CATALOG[Catálogo sembrado]
+    RESERVATIONS --> INVENTORY[Hold/liberación atómica de inventario]
+    RESERVATIONS --> RESERVATION[Repositorio de reservas e idempotencia]
+    PAYMENTS --> PAYMENTREPO[Repositorio de intentos de pago]
+    PAYMENTS --> FAKE[Proveedor de pago simulado]
+    WORKER[FunEvents.Worker] --> EXPIRY[Expiración de reservas]
+    EXPIRY --> INVENTORY
+    EXPIRY --> RESERVATION
+    RESERVATION --> DB[(PostgreSQL)]
+    INVENTORY --> DB
+    CATALOG --> DB
+    PAYMENTREPO --> DB
     API --> OPENAPI[OpenAPI / Swagger]
 ```
 
-El cliente solo conoce la API HTTP. El servicio de reservas coordina validaciones y persistencia; el repositorio oculta el acceso a PostgreSQL. Inventario e inserción de reserva deben confirmarse en una sola transacción.
+El cliente solo conoce la API HTTP. Los casos de uso coordinan las reglas y los repositorios ocultan el acceso a PostgreSQL. El hold de inventario, la reserva y su clave de idempotencia se confirman en una sola transacción. El worker es un proceso separado que ejecuta periódicamente el caso de uso de expiración; no depende de que el cliente consulte la reserva.
 
 #### Flujo de reserva
 
@@ -354,43 +360,81 @@ sequenceDiagram
     end
 ```
 
-### 5.1 API
+### 5.1 API implementada
 
-Base propuesta: `/api/v1`.
+Base: `/api/v1`. Los endpoints implementados son:
 
-| Método y ruta | Uso | Respuesta esperada |
-|---|---|---|
-| `GET /events/{eventCode}` | Validar/consultar el evento | Datos básicos del evento |
-| `GET /events/{eventCode}/sessions` | Consultar sesiones disponibles | Sesiones, zonas/precios y disponibilidad resumida |
-| `POST /reservations` | Crear una reserva | `201 Created`, reserva y expiración |
-| `GET /reservations/{reservationCode}` | Consultar la reserva | Estado, evento, sesión, cantidad y expiración |
-| `POST /reservations/{reservationCode}/cancel` | Cancelar y liberar inventario | Estado actualizado |
+| Método y ruta | Uso | Comportamiento |
+| --- | --- | --- |
+| `POST /reservations` | Crear una reserva temporal | `201 Created`; requiere `Idempotency-Key`. Repetir la misma solicitud devuelve el resultado previo. |
+| `GET /reservations/{reservationCode}` | Consultar una reserva del canal autenticado | Devuelve estado, evento, sesión, cantidad y expiración; también comprueba si debe expirar. |
+| `POST /reservations/{reservationCode}/cancel` | Cancelar una reserva pendiente | Actualiza el estado y libera el inventario una sola vez. |
+| `POST /reservations/{reservationCode}/payments` | Ejecutar o reintentar un pago simulado | Requiere `Idempotency-Key`; devuelve los estados del pago y de la reserva. |
 
-Petición de ejemplo:
+Todos estos endpoints requieren `X-Api-Key`. El canal se obtiene de la API key, no del cuerpo de la petición.
+
+Petición para crear una reserva:
+
+```http
+POST /api/v1/reservations
+X-Api-Key: local-console-secret
+Idempotency-Key: c6d1c491-4bca-476c-b450-f676ce01b61f
+Content-Type: application/json
+```
 
 ```json
 {
-  "eventCode": "EVT-2026-001",
-  "sessionCode": "SES-2026-001-A",
-  "userCode": "USR-1042",
-  "quantity": 2,
-  "channelId": "fun-events-web",
-  "idempotencyKey": "c6d1c491-4bca-476c-b450-f676ce01b61f"
+  "eventCode": "EVT-001",
+  "sessionCode": "SES-001-A",
+  "userCode": "USR-042",
+  "quantity": 2
 }
 ```
 
-El colaborador se determina preferiblemente por la credencial autenticada; `channelId` es un dato de contexto y debe coincidir con esa identidad, no ser una forma de suplantación.
+#### Pago simulado
 
-Errores con `ProblemDetails` y códigos HTTP coherentes: `400` entrada inválida, `401/403` autenticación/autorización, `404` evento/sesión/usuario inexistente, `409` inventario insuficiente o conflicto de idempotencia, `410` reserva vencida y `500` fallo inesperado. La API tendrá OpenAPI/Swagger y versionado explícito.
+El endpoint de pago crea un intento `Pending` persistido antes de invocar al proveedor falso. El proveedor devuelve aleatoriamente `Pending`, `Succeeded` o `Declined`; no se transfiere dinero real. Un resultado exitoso confirma la reserva solo si sigue pendiente y no ha vencido. Si ya no puede confirmarse, el intento queda `RefundRequired`, que representa una compensación pendiente: el prototipo no ejecuta reembolsos. Los intentos y el estado de la reserva se guardan en PostgreSQL. La respuesta incluye el código y estado del pago, y el estado de la reserva.
+
+```mermaid
+sequenceDiagram
+    actor User as Usuario
+    participant Console as Cliente de consola
+    participant API as Minimal API
+    participant UseCase as Caso de uso de pago
+    participant Provider as Proveedor falso
+    participant DB as PostgreSQL
+
+    User->>Console: Elige pagar una reserva
+    Console->>API: POST /api/v1/reservations/{code}/payments + Idempotency-Key
+    API->>UseCase: Procesar pago
+    UseCase->>DB: Crear o recuperar intento Pending
+    UseCase->>Provider: Solicitar resultado simulado
+    Provider-->>UseCase: Pending, Succeeded o Declined
+    UseCase->>DB: Guardar resultado y transición de reserva en transacción
+    DB-->>UseCase: Estado persistido
+    UseCase-->>API: Resultado del pago y de la reserva
+    API-->>Console: Respuesta JSON
+```
+
+La clave de idempotencia identifica el intento de pago dentro del canal. Si el resultado permanece `Pending`, repetir la solicitud con la misma clave continúa ese intento en vez de crear otro.
+
+#### Worker de expiración
+
+`FunEvents.Worker` es un proceso .NET independiente del API. Cada 15 segundos busca hasta 100 reservas pendientes vencidas e intenta expirar cada una. En una transacción cambia el estado a `Expired` y devuelve la cantidad al inventario. El estado de la reserva actúa como token de concurrencia: si una cancelación, pago u otro worker gana la transición, el intento de expiración no libera inventario por segunda vez. Los errores de una pasada se registran y el worker vuelve a intentarlo en el siguiente ciclo.
+
+El worker también puede ejecutarse sin Aspire. En ese modo hay que iniciarlo como proceso separado junto al API y PostgreSQL; sin el worker, las reservas vencidas se actualizan al consultarlas o al intentar pagarlas, pero no se procesan periódicamente en segundo plano.
+
+Errores con `ProblemDetails`: `400` entrada inválida, `401/403` autenticación/autorización, `404` reserva/evento/sesión/usuario inexistente y `409` inventario insuficiente, conflicto de idempotencia o reserva no pagable. El API publica OpenAPI y Scalar en desarrollo; las rutas incluyen el prefijo `/api/v1`.
 
 ### 5.2 Modelo de datos mínimo
 
-- `Event(event_code, name, status)`
-- `Session(session_code, event_code, starts_at, venue_id)`
-- `Inventory(session_code, zone_code, capacity, available, price)`
-- `User(user_code, display_name)` (datos mínimos o semilla de prueba en el prototipo)
-- `Channel(channel_id, type, status)`
-- `Reservation(reservation_code, user_code, session_code, channel_id, quantity, status, expires_at, idempotency_key, created_at)`
+- `events(event_code, name, is_active)`
+- `event_sessions(event_code, session_code, starts_at_utc, is_sales_open)`
+- `session_inventory(event_code, session_code, available_quantity)`
+- `users(user_code, display_name)`
+- `reservations(id, reservation_code, event_code, session_code, user_code, channel_id, quantity, status, created_at_utc, expires_at_utc)`
+- `reservation_idempotency(channel_id, idempotency_key, request_fingerprint, reservation_code, created_at_utc)`
+- `payment_attempts(id, payment_code, reservation_code, channel_id, idempotency_key, status, provider_reference, created_at_utc, updated_at_utc)`
 
 Restricciones e invariantes:
 
@@ -399,32 +443,32 @@ Restricciones e invariantes:
 - Usar actualización condicional/`SELECT ... FOR UPDATE` o mecanismo equivalente para impedir carreras.
 - Índice único para idempotencia dentro del ámbito definido (por canal/cliente autenticado).
 - Los estados mínimos de reserva son `Pending`, `Confirmed`, `Cancelled` y `Expired`.
+- El intento de pago guarda su código, reserva, canal, clave idempotente, referencia del proveedor y marcas de tiempo; sus estados son `Pending`, `Succeeded`, `Declined` y `RefundRequired`.
 
 ### 5.3 Cliente de consola
 
-Aplicación .NET 8+ que recibe argumentos o solicita interactivamente `eventCode`, `sessionCode`, `userCode`, cantidad y canal. Llama a la API con `HttpClient`, muestra código/estado/expiración de la reserva y presenta errores HTTP de forma legible. La URL base y credenciales se configuran fuera del código (configuración/variables de entorno); no se incluyen secretos en el repositorio.
+Aplicación de consola .NET 10 con menú interactivo para crear, consultar, cancelar o pagar una reserva. Al crear solicita `eventCode`, `sessionCode`, `userCode` y cantidad; propone los códigos de la semilla como valores por defecto. Llama a la API con `HttpClient`, muestra la respuesta y presenta errores HTTP de forma legible. El canal se determina por la API key. La URL base y la clave se leen de User Secrets o variables de entorno, con valores locales de desarrollo como fallback.
 
 El cliente genera o acepta una clave de idempotencia para que un reintento de red no duplique la reserva. No accede directamente a PostgreSQL.
 
 ### 5.4 Tecnología y despliegue
 
-- .NET 8 o superior, ASP.NET Core Minimal APIs.
+- .NET 10 en la implementación actual, ASP.NET Core Minimal APIs.
 - PostgreSQL para persistencia transaccional.
-- EF Core o Npgsql con SQL explícito para la operación crítica de inventario; escoger una sola estrategia en la implementación.
-- Docker Compose para ejecutar API y base de datos localmente. .NET Aspire es opcional para orquestación local, telemetría y descubrimiento de servicios; no es requisito del prototipo.
-- OpenTelemetry para logs, métricas y trazas; health checks de vida y disponibilidad.
-- En el prototipo, carga de datos de demostración reproducible mediante migración/seed.
+- EF Core con Npgsql; la reserva condicional de inventario se realiza en la base de datos dentro de una transacción.
+- .NET Aspire AppHost orquesta PostgreSQL, API y worker; el cliente de consola está disponible como recurso de inicio explícito.
+- Health check del API en `/health`; Aspire permite inspeccionar el estado y los logs de los recursos locales.
+- Las migraciones crean el esquema y una semilla de desarrollo reproducible carga eventos, sesiones, usuarios e inventario.
 
-### 5.5 Decisiones pendientes antes de implementar
+### 5.5 Decisiones aplicadas al prototipo
 
-1. ¿La reserva selecciona una sesión y zona concreta, o el sistema puede asignar automáticamente la mejor disponibilidad?
-2. ¿La cantidad máxima por reserva y la duración del bloqueo deben ser fijas o configurables por evento?
-3. ¿El prototipo debe incluir autenticación real desde el inicio o basta una API key de desarrollo claramente aislada?
-4. ¿Se requiere persistir códigos de usuario/evento de prueba en PostgreSQL o cargar un conjunto semilla?
-5. ¿El prototipo debe cubrir solo reserva/cancelación o simular también el pago y la emisión de entradas?
-6. ¿Qué nivel de concurrencia se desea simular para comprobar el comportamiento de la reserva?
+- Cada reserva corresponde a una sesión; el máximo de entradas por reserva y la duración del hold son configurables (valores locales iniciales: 6 entradas y 10 minutos).
+- La API usa API keys de desarrollo por canal; el canal se deriva de la credencial autenticada.
+- La semilla de desarrollo proporciona los códigos conocidos de eventos, sesiones, usuarios e inventario.
+- El pago se simula con resultados aleatorios; no hay cobro, devolución efectiva ni emisión de entradas.
+- PostgreSQL protege la disponibilidad con una actualización condicional y la transición de estado con concurrencia optimista.
 
-### 5.6 Criterios de aceptación (propuesta)
+### 5.6 Criterios de aceptación
 
 - Con códigos válidos y disponibilidad suficiente, la consola obtiene una reserva pendiente con expiración.
 - Un evento, sesión o usuario desconocido produce un error claro sin modificar inventario.
@@ -432,4 +476,7 @@ El cliente genera o acepta una clave de idempotencia para que un reintento de re
 - La disponibilidad nunca queda negativa ante reservas concurrentes.
 - Repetir una solicitud con la misma clave de idempotencia no duplica la reserva.
 - Cancelar o expirar una reserva pendiente libera su inventario una sola vez.
-- La API expone documentación OpenAPI y puede ejecutarse localmente junto con PostgreSQL.
+- El worker expira periódicamente reservas vencidas y libera su inventario sin duplicar liberaciones ante operaciones concurrentes.
+- El endpoint de pago registra el resultado simulado y confirma reservas solo mientras el hold siga vigente; no ejecuta cobros ni reembolsos reales.
+- Los datos de catálogo se obtienen de la semilla; no hay endpoints de consulta de eventos/sesiones en el prototipo.
+- La API y el worker pueden ejecutarse localmente junto con PostgreSQL mediante Aspire o como procesos separados.
