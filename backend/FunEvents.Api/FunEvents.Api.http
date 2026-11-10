@@ -1,5 +1,5 @@
 @FunEvents.Api_HostAddress = http://localhost:5053
-@ApiKey = xxx
+@ApiKey = c29b452e5f85cd802e0940699f5e1a33295ed3a43afbe202472c625442752764
 @IdempotencyKey = reservation-demo-001
 
 ### Create a reservation

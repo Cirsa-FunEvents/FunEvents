@@ -15,4 +15,10 @@ builder.AddProject<Projects.FunEvents_Worker>("funevents-worker")
     .WithReference(database)
     .WaitFor(api);
 
+builder.AddProject<Projects.FunEvents_Console>("funevents-console")
+    .WithEnvironment("FUN_EVENTS_API_BASE_URL", api.GetEndpoint("http"))
+    .WaitFor(api)
+    .WithExplicitStart()
+    .WithTerminal();
+
 builder.Build().Run();

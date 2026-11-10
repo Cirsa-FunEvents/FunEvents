@@ -8,11 +8,13 @@
     <IsAspireHost>true</IsAspireHost>
     <AspireUseCliBundle>true</AspireUseCliBundle>
     <UserSecretsId>6c9e9c4b-bb85-4431-9464-30fdba7b19b2</UserSecretsId>
+    <NoWarn>$(NoWarn);ASPIRETERMINAL001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\backend\FunEvents.Api\FunEvents.Api.csproj" />
     <ProjectReference Include="..\..\backend\FunEvents.Worker\FunEvents.Worker.csproj" />
+    <ProjectReference Include="..\..\frontend\console\FunEvents.Console\FunEvents.Console.csproj" />
   </ItemGroup>
 
   <ItemGroup>

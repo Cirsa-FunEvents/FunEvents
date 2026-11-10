@@ -76,6 +76,31 @@ The AppHost prints the Aspire Dashboard address and the API endpoint when it sta
 
 In Scalar, use **Authorize** to enter the `X-Api-Key` for the `console` channel. The create-reservation operation documents `Idempotency-Key` as a request header; reuse that key only when retrying the same request.
 
+### Run the console client
+
+The AppHost includes `funevents-console` as an explicit-start resource, so it appears in the Aspire Dashboard but does not start automatically. Start that resource when you want to use the client, then open its **Terminal** view to enter menu choices and reservation values. Aspire supplies the API URL from the running API resource. The API key comes from the console project's User Secrets as described below. Aspire's interactive terminal support requires the configured Aspire 13.6.4 packages and CLI.
+
+To run the client outside Aspire, start the API and run the console in another terminal. For the standalone API launch profile:
+
+```sh
+FUN_EVENTS_API_BASE_URL=http://localhost:5053 \
+FUN_EVENTS_API_KEY=local-console-secret \
+dotnet run --project frontend/console/FunEvents.Console/FunEvents.Console.csproj
+```
+
+The client offers create, read, cancel, and exit actions. Create prompts for event, session, user, and quantity; the seeded sample codes are defaults. Read and cancel prompt for a reservation code. Each action prints the API result and returns to the menu. Create sends the reservation over HTTP with a generated idempotency key.
+
+The console client reads its local API URL and key from .NET User Secrets. Set them from the repository root:
+
+```sh
+dotnet user-secrets set "FunEvents:ApiBaseUrl" "http://localhost:5053" \
+  --project frontend/console/FunEvents.Console/FunEvents.Console.csproj
+dotnet user-secrets set "FunEvents:ApiKey" "local-console-secret" \
+  --project frontend/console/FunEvents.Console/FunEvents.Console.csproj
+```
+
+The API key must match the API's `PartnerApiKeys:Channels:console` value. User Secrets are project-specific, so configure the same value for the API project if needed. The console also accepts `FUN_EVENTS_API_BASE_URL` and `FUN_EVENTS_API_KEY` environment variables, which take precedence over User Secrets. If neither is set, it uses `http://localhost:5053` and `local-console-secret` as local development defaults.
+
 Stop the AppHost with `Ctrl+C`. To delete the persisted PostgreSQL data, remove the Aspire-created Docker volume from Docker Desktop or with Docker CLI after stopping the AppHost. This permanently deletes local database contents.
 
 ## Run the backend projects individually
