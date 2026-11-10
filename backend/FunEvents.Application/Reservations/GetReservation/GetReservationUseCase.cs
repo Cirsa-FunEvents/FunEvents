@@ -1,12 +1,13 @@
-using FunEvents.Application.Reservations;
+using FunEvents.Application.Reservations.Repositories;
 using FunEvents.Application.Reservations.GetReservation.Dtos;
+using FunEvents.Application.Reservations.Dtos;
 using FunEvents.Domain.Reservations;
 
 namespace FunEvents.Application.Reservations.GetReservation;
 
 public sealed class GetReservationUseCase(IReservationRepository reservations)
 {
-    public async Task<Reservation?> ExecuteAsync(
+    public async Task<GetReservationResult> ExecuteAsync(
         GetReservationInput input,
         DateTimeOffset nowUtc,
         CancellationToken cancellationToken)
@@ -17,9 +18,11 @@ public sealed class GetReservationUseCase(IReservationRepository reservations)
             nowUtc,
             cancellationToken);
 
-        return await reservations.GetByCodeAsync(
+        var reservation = await reservations.GetByCodeAsync(
             input.ReservationCode,
             input.ChannelId,
             cancellationToken);
+
+        return new(reservation is null ? null : ReservationDetails.From(reservation));
     }
 }

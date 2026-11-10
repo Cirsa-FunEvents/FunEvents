@@ -1,7 +1,8 @@
 using FunEvents.Api.Reservations.Contracts;
 using FunEvents.Api.Reservations.Validation;
 using FunEvents.Application.Reservations.CreateReservation.Dtos;
-using FunEvents.Domain.Reservations;
+using FunEvents.Application.Reservations.Dtos;
+using FunEvents.Application.Reservations.Repositories;
 
 namespace FunEvents.Api.Reservations;
 
@@ -24,7 +25,7 @@ public static class ReservationHttpResultMapper
             : Results.Created(location, response);
     }
 
-    public static IResult FromReservation(Reservation? reservation) => reservation is null
+    public static IResult FromReservation(ReservationDetails? reservation) => reservation is null
         ? Problem(
             StatusCodes.Status404NotFound,
             "reservation_not_found",

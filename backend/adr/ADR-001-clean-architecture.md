@@ -42,6 +42,7 @@ Responsibilities:
 ### Use-case organization and API boundary
 
 - Each application operation is represented by a use-case class in its own folder. The use-case class owns the operation flow, while its input and result DTOs live in that folder's `Dtos` subfolder.
+- Use cases map domain entities to application result DTOs before returning to the API. API endpoints and HTTP mappers do not receive or serialize domain entities directly.
 - The application uses explicit use-case inputs and results without introducing CQRS command/query abstractions, separate read models, or separate data stores.
 - This separation is not currently strict: reservation lookup can transition an overdue reservation to `Expired` and release inventory. That behavior keeps a read response current, but should be revisited if queries are required to be side-effect-free.
 - API routes are organized by feature. Each feature owns its HTTP contracts, request validation, endpoint mappings, and HTTP result mapping.

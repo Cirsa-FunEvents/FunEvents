@@ -1,4 +1,4 @@
-using FunEvents.Application.Reservations;
+using FunEvents.Application.Reservations.Repositories;
 using FunEvents.Infrastructure.Persistence;
 using FunEvents.Infrastructure.Reservations;
 using Microsoft.EntityFrameworkCore;

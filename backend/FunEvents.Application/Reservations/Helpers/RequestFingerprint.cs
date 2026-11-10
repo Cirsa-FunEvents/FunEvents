@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace FunEvents.Application.Reservations;
+namespace FunEvents.Application.Reservations.Helpers;
 
 internal static class RequestFingerprint
 {

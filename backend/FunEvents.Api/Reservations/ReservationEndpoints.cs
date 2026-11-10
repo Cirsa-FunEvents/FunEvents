@@ -80,12 +80,12 @@ public static class ReservationEndpoints
         CancellationToken cancellationToken)
     {
         var channelId = (string)context.Items[PartnerApiKeyEndpointFilter.ChannelIdItemKey]!;
-        var reservation = await useCase.ExecuteAsync(
+        var result = await useCase.ExecuteAsync(
             new GetReservationInput(reservationCode, channelId),
             timeProvider.GetUtcNow(),
             cancellationToken);
 
-        return ReservationHttpResultMapper.FromReservation(reservation);
+        return ReservationHttpResultMapper.FromReservation(result.Reservation);
     }
 
     private static async Task<IResult> CancelAsync(
@@ -96,11 +96,11 @@ public static class ReservationEndpoints
         CancellationToken cancellationToken)
     {
         var channelId = (string)context.Items[PartnerApiKeyEndpointFilter.ChannelIdItemKey]!;
-        var reservation = await useCase.ExecuteAsync(
+        var result = await useCase.ExecuteAsync(
             new CancelReservationInput(reservationCode, channelId),
             timeProvider.GetUtcNow(),
             cancellationToken);
 
-        return ReservationHttpResultMapper.FromReservation(reservation);
+        return ReservationHttpResultMapper.FromReservation(result.Reservation);
     }
 }

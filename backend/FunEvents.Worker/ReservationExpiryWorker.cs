@@ -1,4 +1,4 @@
-using FunEvents.Application.Reservations;
+using FunEvents.Application.Reservations.Repositories;
 
 namespace FunEvents.Worker;
 

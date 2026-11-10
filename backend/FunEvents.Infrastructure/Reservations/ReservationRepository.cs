@@ -1,5 +1,4 @@
-using FunEvents.Application.Reservations;
-using FunEvents.Application.Reservations.CreateReservation.Dtos;
+using FunEvents.Application.Reservations.Repositories;
 using FunEvents.Domain.Reservations;
 using FunEvents.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +8,7 @@ namespace FunEvents.Infrastructure.Reservations;
 
 public sealed class ReservationRepository(FunEventsDbContext db) : IReservationRepository
 {
-    public async Task<CreateReservationResult> TryCreateAsync(
+    public async Task<CreateReservationOutcome> TryCreateAsync(
         Reservation reservation,
         string idempotencyKey,
         string requestFingerprint,
@@ -219,7 +218,7 @@ public sealed class ReservationRepository(FunEventsDbContext db) : IReservationR
             throw new InvalidOperationException("Inventory row for the reservation was not found.");
     }
 
-    private async Task<CreateReservationResult?> FindIdempotentResultAsync(
+    private async Task<CreateReservationOutcome?> FindIdempotentResultAsync(
         string channelId,
         string idempotencyKey,
         string requestFingerprint,

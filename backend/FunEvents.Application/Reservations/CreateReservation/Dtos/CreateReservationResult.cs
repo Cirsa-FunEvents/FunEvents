@@ -1,20 +1,10 @@
-using FunEvents.Domain.Reservations;
+using FunEvents.Application.Reservations.Dtos;
+using FunEvents.Application.Reservations.Repositories;
 
 namespace FunEvents.Application.Reservations.CreateReservation.Dtos;
 
-public enum CreateReservationFailure
-{
-    InvalidQuantity,
-    EventNotFound,
-    SessionNotFound,
-    UserNotFound,
-    SessionUnavailable,
-    InsufficientInventory,
-    IdempotencyKeyReused
-}
-
 public sealed record CreateReservationResult(
-    Reservation? Reservation,
+    ReservationDetails? Reservation,
     CreateReservationFailure? Failure = null,
     bool IsReplay = false)
 {

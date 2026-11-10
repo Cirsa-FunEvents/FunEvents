@@ -1,11 +1,11 @@
 using FunEvents.Domain.Reservations;
-using FunEvents.Application.Reservations.CreateReservation.Dtos;
+using FunEvents.Application.Reservations.Repositories;
 
-namespace FunEvents.Application.Reservations;
+namespace FunEvents.Application.Reservations.Repositories;
 
 public interface IReservationRepository
 {
-    Task<CreateReservationResult> TryCreateAsync(
+    Task<CreateReservationOutcome> TryCreateAsync(
         Reservation reservation,
         string idempotencyKey,
         string requestFingerprint,
